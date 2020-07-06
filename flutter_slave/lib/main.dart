@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_plus/webview_flutter_plus.dart';
 
 void main() => runApp(MyApp());
 
@@ -7,32 +7,42 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: BrowserWidget(
+        onPop: (context) => {},
+      ),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+class BrowserWidget extends StatefulWidget {
+  final Function(BuildContext context) onPop;
 
-  final String title;
+  BrowserWidget({
+    Key key,
+    this.onPop,
+  }) : super(key: key);
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _BrowserWidgetState createState() => _BrowserWidgetState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _BrowserWidgetState extends State<BrowserWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            widget.onPop(context);
+          },
         ),
-        body: WebView(initialUrl: 'https://ya.ru'));
+        title: Text("Browser"),
+      ),
+      body: WebViewPlus(initialUrl: 'https://ya.ru'),
+    );
   }
 }
-//WebView(initialUrl: 'https://ya.ru')

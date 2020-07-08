@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_master/coordinator.dart';
+import 'package:flutter_master/root_coordinator.dart';
 
 final channel = MethodChannel("channel");
 final rootCoordinator = RootCoordinator(channel: channel);
@@ -30,19 +30,19 @@ startChannelListening(BuildContext context) {
   channel.setMethodCallHandler((call) {
     switch (call.method) {
       case "pushRoute":
-        rootCoordinator.changeRote(
+        rootCoordinator.pushFromNative(
           call.arguments,
           animated: false,
         );
         break;
       case "pushRouteAnimated":
-        rootCoordinator.changeRote(
+        rootCoordinator.pushFromNative(
           call.arguments,
           animated: true,
         );
         break;
       case "clearRoute":
-        rootCoordinator.clearRoute(context);
+        rootCoordinator.clear();
         break;
     }
     return null;

@@ -2,23 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slave/main.dart' as slave;
 
 class MenuWidget extends StatelessWidget {
-  final Function(BuildContext ctx) onShowText;
-  final Function(BuildContext ctx) onShowBrowser;
-  final Function(BuildContext ctx) onShowNative;
-  final Function(BuildContext ctx) onShowMenu;
+  final Function onPop;
+  final Function onShowText;
+  final Function onShowBrowser;
+  final Function onShowTextFromNative;
+  final Function onShowBrowserFromNative;
+  final Function onShowNative;
+  final Function onShowMenu;
 
   const MenuWidget({
     Key key,
-    this.onShowText,
-    this.onShowBrowser,
-    this.onShowNative,
-    this.onShowMenu,
+    this.onPop,
+    @required this.onShowText,
+    @required this.onShowBrowser,
+    @required this.onShowTextFromNative,
+    @required this.onShowBrowserFromNative,
+    @required this.onShowNative,
+    @required this.onShowMenu,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: onPop,
+        ),
+      ),
       body: Container(
         color: Colors.white,
         child: Center(
@@ -28,25 +39,37 @@ class MenuWidget extends StatelessWidget {
               MaterialButton(
                 child: Text("Text"),
                 onPressed: () {
-                  onShowText(context);
+                  onShowText();
                 },
               ),
               MaterialButton(
                 child: Text("Browser"),
                 onPressed: () {
-                  onShowBrowser(context);
+                  onShowBrowser();
+                },
+              ),
+              MaterialButton(
+                child: Text("Text From Native"),
+                onPressed: () {
+                  onShowTextFromNative();
+                },
+              ),
+              MaterialButton(
+                child: Text("Browser From Native"),
+                onPressed: () {
+                  onShowBrowserFromNative();
                 },
               ),
               MaterialButton(
                 child: Text("Native"),
                 onPressed: () {
-                  onShowNative(context);
+                  onShowNative();
                 },
               ),
               MaterialButton(
                 child: Text("Menu"),
                 onPressed: () {
-                  onShowMenu(context);
+                  onShowMenu();
                 },
               )
             ],
@@ -58,18 +81,20 @@ class MenuWidget extends StatelessWidget {
 }
 
 class TextWidget extends StatelessWidget {
-  final Function(BuildContext context) onPop;
+  final Function onPop;
 
-  const TextWidget({Key key, this.onPop}) : super(key: key);
+  const TextWidget({
+    Key key,
+    @required this.onPop,
+  }) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            onPop(context);
-          },
+          onPressed: onPop,
         ),
         title: Text("Screen with text"),
       ),
@@ -81,9 +106,12 @@ class TextWidget extends StatelessWidget {
 }
 
 class BrowserScreenWidget extends StatelessWidget {
-  final Function(BuildContext context) onPop;
+  final Function onPop;
 
-  const BrowserScreenWidget({Key key, this.onPop}) : super(key: key);
+  const BrowserScreenWidget({
+    Key key,
+    @required this.onPop,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
 }
 
 class BrowserWidget extends StatefulWidget {
-  final Function(BuildContext context) onPop;
+  final Function onPop;
 
   BrowserWidget({
     Key key,
@@ -36,9 +36,7 @@ class _BrowserWidgetState extends State<BrowserWidget> {
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            widget.onPop(context);
-          },
+          onPressed: widget.onPop,
         ),
         title: Text("Browser"),
       ),

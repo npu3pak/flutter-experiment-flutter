@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_master/coordinator.dart';
 
-void main() {
+final channel = MethodChannel("channel");
+final rootCoordinator = RootCoordinator(channel: channel);
+
+main() {
   runApp(
     MaterialApp(
       title: 'Flutter Demo',
@@ -14,11 +18,33 @@ void main() {
 }
 
 class DebugWidget extends StatelessWidget {
-  final rootCoordinator = RootCoordinator();
-
   @override
   Widget build(BuildContext context) {
-    rootCoordinator.listenChannel();
+    // Слушаем канал после старта приложения
+    startChannelListening(context);
     return rootCoordinator.getMenu();
   }
+}
+
+startChannelListening(BuildContext context) {
+  channel.setMethodCallHandler((call) {
+    switch (call.method) {
+      case "pushRoute":
+        rootCoordinator.changeRote(
+          call.arguments,
+          animated: false,
+        );
+        break;
+      case "pushRouteAnimated":
+        rootCoordinator.changeRote(
+          call.arguments,
+          animated: true,
+        );
+        break;
+      case "clearRoute":
+        rootCoordinator.clearRoute(context);
+        break;
+    }
+    return null;
+  });
 }

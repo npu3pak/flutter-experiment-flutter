@@ -3,89 +3,93 @@ import 'package:flutter/services.dart';
 import 'package:flutter_master/widgets.dart';
 
 class RootCoordinator {
-  final _methodChannel = MethodChannel("channel");
+  final MethodChannel channel;
   var _clearOnPush = false;
 
-  listenChannel() {
-    _methodChannel.setMethodCallHandler((call) {
-      switch (call.method) {
-        case "changeRoute":
-          _changeRote(call.arguments, animated: false);
-          break;
-        case "changeRouteAnimated":
-          _changeRote(call.arguments, animated: true);
-          break;
-        case "clearRoute":
-          _clearOnPush = true;
-          break;
-      }
-      return null;
-    });
-  }
+  List<BuildContext> contextStack = [];
 
-  _changeRote(
+  RootCoordinator({@required this.channel});
+
+  changeRote(
     String route, {
-    @required BuildContext ctx,
-    animated = true,
+    @required animated,
   }) {
     switch (route) {
       case "text":
-        push(TextWidget(onPop: pop), ctx, animated: animated);
+        push(TextWidget(onPop: pop), animated: animated);
         break;
       case "browser":
-        push(BrowserScreenWidget(), ctx, animated: animated);
+        push(BrowserScreenWidget(onPop: pop), animated: animated);
         break;
       case "menu":
-        push(getMenu(), ctx, animated: animated);
+        push(getMenu(), animated: animated);
         break;
     }
   }
 
+  clearRoute(BuildContext context) {
+    _clearOnPush = true;
+  }
+
   // Бизнес-логика
 
-  Widget getMenu() {
-    return MenuWidget(
+  Widget getMenu({onPop}) {
+    final menu = MenuWidget(
+      onPop: onPop,
       onShowText: showText,
       onShowBrowser: showBrowser,
       onShowMenu: showMenu,
       onShowNative: showNative,
+      onShowBrowserFromNative: showBrowserFromNative,
+      onShowTextFromNative: showTextFromNative,
     );
+    return CoordinatedWidget.wrap(menu, this);
   }
 
-  showText(BuildContext ctx) {
-    push(TextWidget(onPop: pop), ctx, animated: true);
+  showText() {
+    push(TextWidget(onPop: pop), animated: true);
   }
 
-  showBrowser(BuildContext ctx) {
-    push(BrowserScreenWidget(onPop: pop), ctx, animated: true);
+  showBrowser() {
+    push(BrowserScreenWidget(onPop: pop), animated: true);
   }
 
-  showMenu(BuildContext ctx) {
-    push(getMenu(), ctx, animated: true);
+  showTextFromNative() {
+    channel.invokeMethod("showFlutterText");
   }
 
-  showNative(BuildContext ctx) {
-    _methodChannel.invokeMethod("showNative");
+  showBrowserFromNative() {
+    channel.invokeMethod("showFlutterBrowser");
+  }
+
+  showNative() {
+    channel.invokeMethod("showNative");
+  }
+
+  showMenu() {
+    push(getMenu(onPop: pop), animated: true);
   }
 
   // Методы навигации
 
-  push(Widget widget, BuildContext context, {animated = true}) {
+  push(Widget widget, {animated = true}) {
     var route =
         animated ? _getAnimatedRoute(widget) : _getNotAnimatedRoute(widget);
+    var ctx = contextStack.last;
 
+    print("Показываем $widget. _clearOnPush=$_clearOnPush");
     if (_clearOnPush) {
       _clearOnPush = false;
-      Navigator.pushAndRemoveUntil(context, route, (route) => false);
+      Navigator.pushAndRemoveUntil(ctx, route, (route) => false);
     } else {
-      Navigator.push(context, route);
+      Navigator.push(ctx, route);
     }
   }
 
   MaterialPageRoute _getAnimatedRoute(Widget widget) {
     return MaterialPageRoute(
       builder: (context) {
-        return widget;
+        return CoordinatedWidget.wrap(widget, this);
       },
     );
   }
@@ -93,18 +97,48 @@ class RootCoordinator {
   PageRouteBuilder _getNotAnimatedRoute(Widget widget) {
     return PageRouteBuilder(
       pageBuilder: (_, __, ___) {
-        return widget;
+        return CoordinatedWidget.wrap(widget, this);
       },
       transitionDuration: Duration(seconds: 0),
     );
   }
 
-  pop(BuildContext context) {
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
+  pop() {
+    var ctx = contextStack.last;
+    if (Navigator.canPop(ctx)) {
+      contextStack.removeLast();
+      Navigator.pop(ctx);
     } else {
       _clearOnPush = true;
-      _methodChannel.invokeMethod("pop");
+      channel.invokeMethod("pop");
     }
+  }
+}
+
+class CoordinatedWidget extends StatelessWidget {
+  final Widget contentWidget;
+  final RootCoordinator coordinator;
+
+  const CoordinatedWidget._(
+    this.contentWidget,
+    this.coordinator, {
+    Key key,
+  }) : super(key: key);
+
+  static CoordinatedWidget wrap(
+    Widget widget,
+    RootCoordinator coordinator,
+  ) {
+    if (widget is CoordinatedWidget) {
+      return widget;
+    } else {
+      return CoordinatedWidget._(widget, coordinator);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    coordinator.contextStack.add(context);
+    return contentWidget;
   }
 }

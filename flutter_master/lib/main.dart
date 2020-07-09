@@ -6,6 +6,7 @@ final channel = MethodChannel("channel");
 final rootCoordinator = RootCoordinator(channel: channel);
 
 main() {
+  print("FLTR: runApp");
   runApp(
     MaterialApp(
       title: 'Flutter Demo',

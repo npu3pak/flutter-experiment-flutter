@@ -3,10 +3,25 @@ import 'package:flutter/services.dart';
 
 enum WidgetSource { flutter, nativeApp }
 
+printDebug(coordinator, title) {
+  print("FLTR: ");
+  print("FLTR: ");
+  print("FLTR: $title");
+  print("FLTR: sources = ${coordinator.sourceStack}");
+
+  var ctxStackWidgets = coordinator.contextStack.map((e) {
+    return (e.widget as CoordinatedWidget).contentWidget;
+  });
+  print("FLTR: context widgets = $ctxStackWidgets");
+
+  print("FLTR: ");
+  print("FLTR: ");
+}
+
 class Coordinator {
   var _clearOnPush = false;
-  List<BuildContext> _contextStack = [];
-  List<WidgetSource> _sourceStack = [];
+  List<BuildContext> contextStack = [];
+  List<WidgetSource> sourceStack = [];
   final MethodChannel methodChannel;
 
   Coordinator({@required this.methodChannel});
@@ -16,41 +31,40 @@ class Coordinator {
   }
 
   pop() {
-    print("FLTR: ==========");
-    print("FLTR: Перед POP");
-    print("FLTR: sources = $_sourceStack");
-    print("FLTR: contexts = $_contextStack");
-    var ctx = _contextStack.last;
-    var source = _sourceStack.last;
+    printDebug(this, "Перед pop");
+    var ctx = contextStack.last;
+    var source = sourceStack.last;
 
     if (source == WidgetSource.flutter) {
-      _contextStack.removeLast();
-      _sourceStack.removeLast();
+      contextStack.removeLast();
+      sourceStack.removeLast();
       Navigator.pop(ctx);
     } else {
-      _sourceStack.removeLast();
+      sourceStack.removeLast();
       methodChannel.invokeMethod("pop");
     }
-    print("FLTR: После POP");
-    print("FLTR: sources = $_sourceStack");
-    print("FLTR: contexts = $_contextStack");
+    printDebug(this, "После pop");
   }
 
   push(Widget widget, {animated = true, source = WidgetSource.flutter}) {
     var route =
         animated ? _getAnimatedRoute(widget) : _getNotAnimatedRoute(widget);
-    var ctx = _contextStack.last;
+    var ctx = contextStack.last;
 
-    print("Показываем $widget. _clearOnPush=$_clearOnPush");
+    printDebug(
+        this, "Перед push. $widget, animated: $animated, source: $source");
+
     if (_clearOnPush) {
       _clearOnPush = false;
-      _sourceStack = [source];
-      _contextStack.clear();
+      sourceStack = [source];
+      contextStack.clear();
       Navigator.pushAndRemoveUntil(ctx, route, (route) => false);
     } else {
-      _sourceStack.add(source);
+      sourceStack.add(source);
       Navigator.push(ctx, route);
     }
+    printDebug(
+        this, "После push. $widget, animated: $animated, source: $source");
   }
 
   MaterialPageRoute _getAnimatedRoute(Widget widget) {
@@ -94,7 +108,8 @@ class CoordinatedWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    coordinator._contextStack.add(context);
+    coordinator.contextStack.add(context);
+    printDebug(coordinator, "Перед отображением виджета");
     return contentWidget;
   }
 }

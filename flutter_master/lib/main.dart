@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_master/coordinator.dart';
 import 'package:flutter_master/root_coordinator.dart';
 
 final channel = MethodChannel("channel");
@@ -33,13 +34,13 @@ startChannelListening(BuildContext context) {
       case "pushRouteFromNative":
         rootCoordinator.handleChannelPush(
           call.arguments,
-          fromFlutter: false,
+          source: NavigationSource.nativeApp,
         );
         break;
       case "pushRouteFromFlutter":
         rootCoordinator.handleChannelPush(
           call.arguments,
-          fromFlutter: true,
+          source: NavigationSource.flutter,
         );
         break;
       case "clearRoute":

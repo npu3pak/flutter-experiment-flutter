@@ -7,31 +7,24 @@ class RootCoordinator extends Coordinator {
 
   handleChannelPush(
     String route, {
-    @required fromFlutter,
+    @required NavigationSource source,
   }) {
-    final source =
-        fromFlutter ? NavigationSource.flutter : NavigationSource.nativeApp;
-
-    final animated = fromFlutter;
     switch (route) {
       case "text":
         push(
           TextWidget(onPop: pop),
-          animated: animated,
           source: source,
         );
         break;
       case "browser":
         push(
           BrowserScreenWidget(onPop: pop),
-          animated: animated,
           source: source,
         );
         break;
       case "menu":
         push(
           getMenu(onPop: pop),
-          animated: animated,
           source: source,
         );
         break;
@@ -54,11 +47,11 @@ class RootCoordinator extends Coordinator {
   }
 
   showText() {
-    push(TextWidget(onPop: pop), animated: true);
+    push(TextWidget(onPop: pop));
   }
 
   showBrowser() {
-    push(BrowserScreenWidget(onPop: pop), animated: true);
+    push(BrowserScreenWidget(onPop: pop));
   }
 
   showTextFromNative() {
@@ -74,6 +67,6 @@ class RootCoordinator extends Coordinator {
   }
 
   showMenu() {
-    push(getMenu(onPop: pop), animated: true);
+    push(getMenu(onPop: pop));
   }
 }

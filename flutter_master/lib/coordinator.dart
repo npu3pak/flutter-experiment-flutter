@@ -30,6 +30,7 @@ class Coordinator {
     _clearOnPush = true;
   }
 
+  /// Метод показывает предыдущий экран в стеке навигации.
   pop() {
     printDebug(this, "Перед pop");
     var ctx = contextStack.last;
@@ -46,13 +47,14 @@ class Coordinator {
     printDebug(this, "После pop");
   }
 
-  push(Widget widget, {animated = true, source = NavigationSource.flutter}) {
-    var route =
-        animated ? _getAnimatedRoute(widget) : _getNotAnimatedRoute(widget);
+  /// Метод показывает  стеке навигации новый экран с переданным виджетом.
+  push(Widget widget, {source = NavigationSource.flutter}) {
     var ctx = contextStack.last;
+    var route = source == NavigationSource.flutter
+        ? _getAnimatedRoute(widget)
+        : _getNotAnimatedRoute(widget);
 
-    printDebug(
-        this, "Перед push. $widget, animated: $animated, source: $source");
+    printDebug(this, "Перед push. $widget, source: $source");
 
     if (_clearOnPush) {
       _clearOnPush = false;
@@ -63,10 +65,11 @@ class Coordinator {
       sourceStack.add(source);
       Navigator.push(ctx, route);
     }
-    printDebug(
-        this, "После push. $widget, animated: $animated, source: $source");
+    printDebug(this, "После push. $widget, source: $source");
   }
 
+  /// Route с анимацией. Нужен чтобы показывать новый виджет Flutter в существующем
+  /// окне нативного приложения.
   MaterialPageRoute _getAnimatedRoute(Widget widget) {
     return MaterialPageRoute(
       builder: (context) {
@@ -75,6 +78,9 @@ class Coordinator {
     );
   }
 
+  /// Route без анимации. Нужен чтобы показывать новый виджет Flutter в новом окне
+  /// нативного приложения. Т.к. анимация в данном случае на стороне нативного окна,
+  /// виджет должен отрисовываться без анимации.
   PageRouteBuilder _getNotAnimatedRoute(Widget widget) {
     return PageRouteBuilder(
       pageBuilder: (_, __, ___) {
@@ -85,6 +91,8 @@ class Coordinator {
   }
 }
 
+/// Виджет оборачивает виджеты, участвующие в навигации, ловит контекст во время
+/// отрисовки и сохраняет его в координаторе.
 class CoordinatedWidget extends StatelessWidget {
   final Widget contentWidget;
   final Coordinator coordinator;

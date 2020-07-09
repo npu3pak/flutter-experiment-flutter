@@ -9,7 +9,9 @@ class RootCoordinator extends Coordinator {
     String route, {
     @required fromFlutter,
   }) {
-    final source = fromFlutter ? WidgetSource.flutter : WidgetSource.nativeApp;
+    final source =
+        fromFlutter ? NavigationSource.flutter : NavigationSource.nativeApp;
+
     final animated = fromFlutter;
     switch (route) {
       case "text":

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-enum WidgetSource { flutter, nativeApp }
+enum NavigationSource { flutter, nativeApp }
 
-printDebug(coordinator, title) {
+printDebug(Coordinator coordinator, title) {
   print("FLTR: ");
   print("FLTR: ");
   print("FLTR: $title");
@@ -12,7 +12,7 @@ printDebug(coordinator, title) {
   var ctxStackWidgets = coordinator.contextStack.map((e) {
     return (e.widget as CoordinatedWidget).contentWidget;
   });
-  print("FLTR: context widgets = $ctxStackWidgets");
+  print("FLTR: contexts = $ctxStackWidgets");
 
   print("FLTR: ");
   print("FLTR: ");
@@ -21,7 +21,7 @@ printDebug(coordinator, title) {
 class Coordinator {
   var _clearOnPush = false;
   List<BuildContext> contextStack = [];
-  List<WidgetSource> sourceStack = [];
+  List<NavigationSource> sourceStack = [];
   final MethodChannel methodChannel;
 
   Coordinator({@required this.methodChannel});
@@ -33,20 +33,20 @@ class Coordinator {
   pop() {
     printDebug(this, "Перед pop");
     var ctx = contextStack.last;
-    var source = sourceStack.last;
+    var source = sourceStack.removeLast();
 
-    if (source == WidgetSource.flutter) {
-      contextStack.removeLast();
-      sourceStack.removeLast();
-      Navigator.pop(ctx);
-    } else {
-      sourceStack.removeLast();
+    if (source == NavigationSource.nativeApp) {
       methodChannel.invokeMethod("pop");
     }
+    if (Navigator.canPop(ctx)) {
+      Navigator.pop(ctx);
+      contextStack.removeLast();
+    }
+
     printDebug(this, "После pop");
   }
 
-  push(Widget widget, {animated = true, source = WidgetSource.flutter}) {
+  push(Widget widget, {animated = true, source = NavigationSource.flutter}) {
     var route =
         animated ? _getAnimatedRoute(widget) : _getNotAnimatedRoute(widget);
     var ctx = contextStack.last;

@@ -29,16 +29,16 @@ class DebugWidget extends StatelessWidget {
 startChannelListening(BuildContext context) {
   channel.setMethodCallHandler((call) {
     switch (call.method) {
-      case "pushRoute":
-        rootCoordinator.pushFromNative(
+      case "pushRouteFromNative":
+        rootCoordinator.handleChannelPush(
           call.arguments,
-          animated: false,
+          fromFlutter: false,
         );
         break;
-      case "pushRouteAnimated":
-        rootCoordinator.pushFromNative(
+      case "pushRouteFromFlutter":
+        rootCoordinator.handleChannelPush(
           call.arguments,
-          animated: true,
+          fromFlutter: true,
         );
         break;
       case "clearRoute":

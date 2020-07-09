@@ -5,19 +5,33 @@ import 'package:flutter_master/coordinator.dart';
 class RootCoordinator extends Coordinator {
   RootCoordinator({@required channel}) : super(methodChannel: channel);
 
-  pushFromNative(
+  handleChannelPush(
     String route, {
-    @required animated,
+    @required fromFlutter,
   }) {
+    final source = fromFlutter ? WidgetSource.flutter : WidgetSource.nativeApp;
+    final animated = fromFlutter;
     switch (route) {
       case "text":
-        push(TextWidget(onPop: pop), animated: animated);
+        push(
+          TextWidget(onPop: pop),
+          animated: animated,
+          source: source,
+        );
         break;
       case "browser":
-        push(BrowserScreenWidget(onPop: pop), animated: animated);
+        push(
+          BrowserScreenWidget(onPop: pop),
+          animated: animated,
+          source: source,
+        );
         break;
       case "menu":
-        push(getMenu(onPop: pop), animated: animated);
+        push(
+          getMenu(onPop: pop),
+          animated: animated,
+          source: source,
+        );
         break;
     }
   }

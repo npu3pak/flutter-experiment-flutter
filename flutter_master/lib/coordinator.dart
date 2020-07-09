@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+enum WidgetSource { flutter, nativeApp }
+
 class Coordinator {
   var _clearOnPush = false;
-  List<BuildContext> contextStack = [];
+  List<BuildContext> _contextStack = [];
+  List<WidgetSource> _sourceStack = [];
   final MethodChannel methodChannel;
 
   Coordinator({@required this.methodChannel});
@@ -13,26 +16,39 @@ class Coordinator {
   }
 
   pop() {
-    var ctx = contextStack.last;
-    if (Navigator.canPop(ctx)) {
-      contextStack.removeLast();
+    print("FLTR: ==========");
+    print("FLTR: Перед POP");
+    print("FLTR: sources = $_sourceStack");
+    print("FLTR: contexts = $_contextStack");
+    var ctx = _contextStack.last;
+    var source = _sourceStack.last;
+
+    if (source == WidgetSource.flutter) {
+      _contextStack.removeLast();
+      _sourceStack.removeLast();
       Navigator.pop(ctx);
     } else {
-      _clearOnPush = true;
+      _sourceStack.removeLast();
       methodChannel.invokeMethod("pop");
     }
+    print("FLTR: После POP");
+    print("FLTR: sources = $_sourceStack");
+    print("FLTR: contexts = $_contextStack");
   }
 
-  push(Widget widget, {animated = true}) {
+  push(Widget widget, {animated = true, source = WidgetSource.flutter}) {
     var route =
         animated ? _getAnimatedRoute(widget) : _getNotAnimatedRoute(widget);
-    var ctx = contextStack.last;
+    var ctx = _contextStack.last;
 
     print("Показываем $widget. _clearOnPush=$_clearOnPush");
     if (_clearOnPush) {
       _clearOnPush = false;
+      _sourceStack = [source];
+      _contextStack.clear();
       Navigator.pushAndRemoveUntil(ctx, route, (route) => false);
     } else {
+      _sourceStack.add(source);
       Navigator.push(ctx, route);
     }
   }
@@ -78,7 +94,7 @@ class CoordinatedWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    coordinator.contextStack.add(context);
+    coordinator._contextStack.add(context);
     return contentWidget;
   }
 }

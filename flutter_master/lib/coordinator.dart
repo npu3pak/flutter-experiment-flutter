@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-enum NavigationSource { flutter, nativeApp }
+/// Источник навигации при показе нового виджета.
+enum NavigationSource {
+  /// Используется если нужно показать виджет внетри Flutter или из нативного
+  /// приложения, если в настоящее время открыто окно Flutter.
+  /// В этом случае новый виджет будет показан с анимацией Flutter, а pop()
+  /// для этого виджета выполнит навигацию внутри стека Flutter.
+  flutter,
 
-printDebug(Coordinator coordinator, title) {
-  print("FLTR: ");
-  print("FLTR: ");
-  print("FLTR: $title");
-  print("FLTR: sources = ${coordinator.sourceStack}");
-
-  var ctxStackWidgets = coordinator.contextStack.map((e) {
-    return (e.widget as CoordinatedWidget).contentWidget;
-  });
-  print("FLTR: contexts = $ctxStackWidgets");
-
-  print("FLTR: ");
-  print("FLTR: ");
+  /// Используется если нужно показать виджет из нативного приложения на новом
+  /// нативном экране.
+  /// В этом случае новый виджет будет показан без анимации Flutter, т.к. нативный
+  /// экран и так показывается с анимацией. Метод pop для этого виджета выполнит
+  /// выполнит нативный метод pop и затем, если это возможно, pop внутри стека Flutter.
+  nativeApp
 }
 
+/// Базовый класс, содержащий методы для навигации, и связывающий стек авигации
+/// Flutter со стеком нативного приложения.
 class Coordinator {
-  var _clearOnPush = false;
-  List<BuildContext> contextStack = [];
-  List<NavigationSource> sourceStack = [];
   final MethodChannel methodChannel;
+  var _clearOnPush = false;
+  List<BuildContext> _contextStack = [];
+  List<NavigationSource> _sourceStack = [];
 
   Coordinator({@required this.methodChannel});
 
@@ -30,42 +31,43 @@ class Coordinator {
     _clearOnPush = true;
   }
 
+  /// Метод показывает новый экран с переданным виджетом. Виджет добавляется в
+  /// стек навигации. В параметре [source] указывается источник навигации.
+  push(Widget widget, {source = NavigationSource.flutter}) {
+    var ctx = _contextStack.last;
+    var route = source == NavigationSource.flutter
+        ? _getAnimatedRoute(widget)
+        : _getNotAnimatedRoute(widget);
+
+    _printDebug(this, "Перед push. $widget, source: $source");
+
+    if (_clearOnPush) {
+      _clearOnPush = false;
+      _sourceStack = [source];
+      _contextStack.clear();
+      Navigator.pushAndRemoveUntil(ctx, route, (route) => false);
+    } else {
+      _sourceStack.add(source);
+      Navigator.push(ctx, route);
+    }
+    _printDebug(this, "После push. $widget, source: $source");
+  }
+
   /// Метод показывает предыдущий экран в стеке навигации.
   pop() {
-    printDebug(this, "Перед pop");
-    var ctx = contextStack.last;
-    var source = sourceStack.removeLast();
+    _printDebug(this, "Перед pop");
+    var ctx = _contextStack.last;
+    var source = _sourceStack.removeLast();
 
     if (source == NavigationSource.nativeApp) {
       methodChannel.invokeMethod("pop");
     }
     if (Navigator.canPop(ctx)) {
       Navigator.pop(ctx);
-      contextStack.removeLast();
+      _contextStack.removeLast();
     }
 
-    printDebug(this, "После pop");
-  }
-
-  /// Метод показывает  стеке навигации новый экран с переданным виджетом.
-  push(Widget widget, {source = NavigationSource.flutter}) {
-    var ctx = contextStack.last;
-    var route = source == NavigationSource.flutter
-        ? _getAnimatedRoute(widget)
-        : _getNotAnimatedRoute(widget);
-
-    printDebug(this, "Перед push. $widget, source: $source");
-
-    if (_clearOnPush) {
-      _clearOnPush = false;
-      sourceStack = [source];
-      contextStack.clear();
-      Navigator.pushAndRemoveUntil(ctx, route, (route) => false);
-    } else {
-      sourceStack.add(source);
-      Navigator.push(ctx, route);
-    }
-    printDebug(this, "После push. $widget, source: $source");
+    _printDebug(this, "После pop");
   }
 
   /// Route с анимацией. Нужен чтобы показывать новый виджет Flutter в существующем
@@ -116,8 +118,23 @@ class CoordinatedWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    coordinator.contextStack.add(context);
-    printDebug(coordinator, "Перед отображением виджета");
+    coordinator._contextStack.add(context);
+    _printDebug(coordinator, "Перед отображением виджета");
     return contentWidget;
   }
+}
+
+_printDebug(Coordinator coordinator, title) {
+  print("FLTR: ");
+  print("FLTR: ");
+  print("FLTR: $title");
+  print("FLTR: sources = ${coordinator._sourceStack}");
+
+  var ctxStackWidgets = coordinator._contextStack.map((e) {
+    return (e.widget as CoordinatedWidget).contentWidget;
+  });
+  print("FLTR: contexts = $ctxStackWidgets");
+
+  print("FLTR: ");
+  print("FLTR: ");
 }

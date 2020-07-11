@@ -9,6 +9,7 @@ class MenuWidget extends StatelessWidget {
   final Function onShowBrowserFromNative;
   final Function onShowNative;
   final Function onShowMenu;
+  final Function onShowChild;
 
   const MenuWidget({
     Key key,
@@ -19,6 +20,7 @@ class MenuWidget extends StatelessWidget {
     @required this.onShowBrowserFromNative,
     @required this.onShowNative,
     @required this.onShowMenu,
+    @required this.onShowChild,
   }) : super(key: key);
 
   @override
@@ -71,6 +73,12 @@ class MenuWidget extends StatelessWidget {
                 onPressed: () {
                   onShowMenu();
                 },
+              ),
+              MaterialButton(
+                child: Text("Child coordinator"),
+                onPressed: () {
+                  onShowChild();
+                },
               )
             ],
           ),
@@ -118,5 +126,49 @@ class BrowserScreenWidget extends StatelessWidget {
     return slave.BrowserWidget(
       onPop: onPop,
     );
+  }
+}
+
+class ChildRoot extends StatefulWidget {
+  final Function onPop;
+  final Function onShowNext;
+
+  const ChildRoot({
+    Key key,
+    @required this.onPop,
+    this.onShowNext,
+  }) : super(key: key);
+
+  @override
+  _ChildRootState createState() => _ChildRootState();
+}
+
+class _ChildRootState extends State<ChildRoot> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: widget.onPop,
+        ),
+        title: Text("Child stack"),
+      ),
+      body: Container(
+        color: Colors.amber,
+        child: MaterialButton(
+          child: Text("Next"),
+          onPressed: () {
+            widget.onShowNext();
+          },
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    print("FLTR: Child disposed");
+    super.dispose();
   }
 }

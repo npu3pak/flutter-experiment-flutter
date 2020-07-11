@@ -1,11 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_master/child_coordinator.dart';
 import 'package:flutter_master/widgets.dart';
 import 'package:flutter_master/coordinator.dart';
 
 class RootCoordinator extends Coordinator {
-  RootCoordinator({@required channel}) : super(methodChannel: channel);
+  RootCoordinator({@required channel}) : super(methodChannel: channel) {
+    _startChannelListening();
+  }
 
-  handleChannelPush(
+  _startChannelListening() {
+    methodChannel.setMethodCallHandler((call) {
+      switch (call.method) {
+        case "pushRouteFromNative":
+          _handleChannelPush(
+            call.arguments,
+            source: NavigationSource.nativeApp,
+          );
+          break;
+        case "pushRouteFromFlutter":
+          _handleChannelPush(
+            call.arguments,
+            source: NavigationSource.flutter,
+          );
+          break;
+      }
+      return null;
+    });
+  }
+
+  _handleChannelPush(
     String route, {
     @required NavigationSource source,
   }) {
@@ -24,7 +47,14 @@ class RootCoordinator extends Coordinator {
         break;
       case "menu":
         push(
-          getMenu(onPop: pop),
+          getMenu(),
+          source: source,
+        );
+        break;
+      case "child":
+        final childCoordinator = ChildCoordinator();
+        push(
+          childCoordinator.getInitial(onPop: pop),
           source: source,
         );
         break;
@@ -33,17 +63,30 @@ class RootCoordinator extends Coordinator {
 
   // Бизнес-логика
 
-  Widget getMenu({onPop}) {
+  Widget getInitialMenu() {
     final menu = MenuWidget(
-      onPop: onPop,
       onShowText: showText,
       onShowBrowser: showBrowser,
       onShowMenu: showMenu,
       onShowNative: showNative,
       onShowBrowserFromNative: showBrowserFromNative,
       onShowTextFromNative: showTextFromNative,
+      onShowChild: showChild,
     );
-    return CoordinatedWidget.wrap(menu, this);
+    return wrapInitial(menu);
+  }
+
+  Widget getMenu() {
+    return MenuWidget(
+      onPop: pop,
+      onShowText: showText,
+      onShowBrowser: showBrowser,
+      onShowMenu: showMenu,
+      onShowNative: showNative,
+      onShowBrowserFromNative: showBrowserFromNative,
+      onShowTextFromNative: showTextFromNative,
+      onShowChild: showChild,
+    );
   }
 
   showText() {
@@ -67,6 +110,11 @@ class RootCoordinator extends Coordinator {
   }
 
   showMenu() {
-    push(getMenu(onPop: pop));
+    push(getMenu());
+  }
+
+  showChild() {
+    final childCoordinator = ChildCoordinator();
+    push(childCoordinator.getInitial(onPop: pop));
   }
 }

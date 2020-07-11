@@ -21,49 +21,50 @@ enum NavigationSource {
 /// Flutter со стеком нативного приложения.
 class Coordinator {
   final MethodChannel methodChannel;
-  var _clearOnPush = false;
   List<BuildContext> _contextStack = [];
   List<NavigationSource> _sourceStack = [];
 
   Coordinator({@required this.methodChannel});
 
-  clear() {
-    _clearOnPush = true;
+  Widget wrapInitial(Widget widget) {
+    return Navigator(
+      onGenerateRoute: (settings) {
+        WidgetBuilder builder = (_) {
+          _sourceStack.add(NavigationSource.flutter);
+          return CoordinatedWidget.wrap(widget, this);
+        };
+        return MaterialPageRoute(builder: builder, settings: settings);
+      },
+    );
   }
+
+  NavigatorState get _currentNavigator => Navigator.of(_contextStack.last);
 
   /// Метод показывает новый экран с переданным виджетом. Виджет добавляется в
   /// стек навигации. В параметре [source] указывается источник навигации.
   push(Widget widget, {source = NavigationSource.flutter}) {
-    var ctx = _contextStack.last;
     var route = source == NavigationSource.flutter
         ? _getAnimatedRoute(widget)
         : _getNotAnimatedRoute(widget);
 
     _printDebug(this, "Перед push. $widget, source: $source");
 
-    if (_clearOnPush) {
-      _clearOnPush = false;
-      _sourceStack = [source];
-      _contextStack.clear();
-      Navigator.pushAndRemoveUntil(ctx, route, (route) => false);
-    } else {
-      _sourceStack.add(source);
-      Navigator.push(ctx, route);
-    }
+    _sourceStack.add(source);
+    _currentNavigator.push(route);
+
     _printDebug(this, "После push. $widget, source: $source");
   }
 
   /// Метод показывает предыдущий экран в стеке навигации.
   pop() {
     _printDebug(this, "Перед pop");
-    var ctx = _contextStack.last;
     var source = _sourceStack.removeLast();
 
     if (source == NavigationSource.nativeApp) {
       methodChannel.invokeMethod("pop");
     }
-    if (Navigator.canPop(ctx)) {
-      Navigator.pop(ctx);
+    if (_currentNavigator.canPop()) {
+      _currentNavigator.pop();
       _contextStack.removeLast();
     }
 

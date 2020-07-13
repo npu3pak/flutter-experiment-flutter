@@ -44,8 +44,8 @@ class Coordinator {
   /// стек навигации. В параметре [source] указывается источник навигации.
   push(Widget widget, {source = NavigationSource.flutter}) {
     var route = source == NavigationSource.flutter
-        ? _getAnimatedRoute(widget)
-        : _getNotAnimatedRoute(widget);
+        ? FlutterPageRoute(widget: widget, coordinator: this)
+        : NativePageRoute(widget: widget, coordinator: this);
 
     _printDebug(this, "Перед push. $widget, source: $source");
 
@@ -58,39 +58,16 @@ class Coordinator {
   /// Метод показывает предыдущий экран в стеке навигации.
   pop() {
     _printDebug(this, "Перед pop");
-    var source = _sourceStack.removeLast();
+    var source = _sourceStack.last;
 
     if (source == NavigationSource.nativeApp) {
       methodChannel.invokeMethod("pop");
     }
     if (_currentNavigator.canPop()) {
       _currentNavigator.pop();
-      _contextStack.removeLast();
     }
 
-    _printDebug(this, "После pop");
-  }
-
-  /// Route с анимацией. Нужен чтобы показывать новый виджет Flutter в существующем
-  /// окне нативного приложения.
-  MaterialPageRoute _getAnimatedRoute(Widget widget) {
-    return MaterialPageRoute(
-      builder: (context) {
-        return CoordinatedWidget.wrap(widget, this);
-      },
-    );
-  }
-
-  /// Route без анимации. Нужен чтобы показывать новый виджет Flutter в новом окне
-  /// нативного приложения. Т.к. анимация в данном случае на стороне нативного окна,
-  /// виджет должен отрисовываться без анимации.
-  PageRouteBuilder _getNotAnimatedRoute(Widget widget) {
-    return PageRouteBuilder(
-      pageBuilder: (_, __, ___) {
-        return CoordinatedWidget.wrap(widget, this);
-      },
-      transitionDuration: Duration(seconds: 0),
-    );
+    _printDebug(this, "После pop в Coordinator");
   }
 }
 
@@ -122,6 +99,46 @@ class CoordinatedWidget extends StatelessWidget {
     coordinator._contextStack.add(context);
     _printDebug(coordinator, "Перед отображением виджета");
     return contentWidget;
+  }
+}
+
+/// Route без анимации. Нужен чтобы показывать новый виджет Flutter в новом окне
+/// нативного приложения. Т.к. анимация в данном случае на стороне нативного окна,
+/// виджет должен отрисовываться без анимации.
+class NativePageRoute extends PageRouteBuilder {
+  final Coordinator coordinator;
+
+  NativePageRoute({@required Widget widget, @required this.coordinator})
+      : super(
+          pageBuilder: (_, __, ___) {
+            return CoordinatedWidget.wrap(widget, coordinator);
+          },
+          transitionDuration: Duration(seconds: 0),
+        );
+
+  @override
+  bool didPop(result) {
+    coordinator._contextStack.removeLast();
+    coordinator._sourceStack.removeLast();
+    _printDebug(coordinator, "После pop в NativePageRoute");
+    return super.didPop(result);
+  }
+}
+
+/// Route с анимацией. Нужен чтобы показывать новый виджет Flutter в существующем
+/// окне нативного приложения.
+class FlutterPageRoute extends MaterialPageRoute {
+  final Coordinator coordinator;
+
+  FlutterPageRoute({@required Widget widget, @required this.coordinator})
+      : super(builder: (_) => CoordinatedWidget.wrap(widget, coordinator));
+
+  @override
+  bool didPop(result) {
+    coordinator._contextStack.removeLast();
+    coordinator._sourceStack.removeLast();
+    _printDebug(coordinator, "После pop в FlutterPageRoute");
+    return super.didPop(result);
   }
 }
 
